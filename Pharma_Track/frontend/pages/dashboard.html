@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PharmaStock — Inventory & POS System</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="../css/inventory.css">
+  <link rel="stylesheet" href="../css/pos.css">
+  <link rel="stylesheet" href="../css/reports.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     TOAST CONTAINER
+     ============================================================ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================================
+     LOADING OVERLAY
+     ============================================================ -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div style="text-align:center">
+    <div class="spinner" style="width:40px;height:40px;border-width:4px;margin:0 auto 12px"></div>
+    <div style="color:#fff;font-size:.875rem">Loading…</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div class="app-shell">
+
+  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <div class="brand-icon">💊</div>
+      <div class="brand-text">Pharma Track</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">Main Menu</div>
+
+      <div class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+
+      <div class="nav-item" data-page="pos">
+        <span class="nav-icon">🛒</span>
+        <span class="nav-label">Cashier / POS</span>
+      </div>
+
+      <div class="nav-item" data-page="inventory">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">Inventory</span>
+        <span class="nav-badge" id="navBadgeInventory"></span>
+      </div>
+
+      <div class="nav-item" data-page="suppliers">
+        <span class="nav-icon">🏭</span>
+        <span class="nav-label">Suppliers</span>
+      </div>
+
+      <div class="sidebar-section-title">Analytics</div>
+
+      <div class="nav-item" data-page="reports">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Sales Report</span>
+      </div>
+
+      <div class="nav-item" data-page="history">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">History Log</span>
+      </div>
+
+      <div class="sidebar-section-title">System</div>
+
+      <div class="nav-item" data-page="settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </div>
+    </nav>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <div class="nav-item" id="logoutBtn" style="color:rgba(255,255,255,.5)">
+        <span class="nav-icon">🚪</span>
+        <span class="nav-label">Logout</span>
+      </div>
+      <button class="collapse-btn" id="collapseBtn">
+        <span class="nav-icon collapse-icon">←</span>
+        <span class="nav-label">Collapse</span>
+      </button>
+    </div>
+  </aside><!-- /sidebar -->
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content" id="mainContent">
+
+    <!-- Top Header -->
+    <header class="top-header">
+      <button class="header-btn" id="hamburgerBtn" style="display:none">☰</button>
+      <h1 class="header-title" id="headerTitle">Dashboard</h1>
+      <div class="header-right">
+        <button class="header-btn" id="darkModeBtn" title="Toggle Dark Mode">🌙</button>
+        <button class="header-btn" id="notifBtn" title="Notifications">
+          🔔
+          <span class="notif-dot"></span>
+        </button>
+        <div class="user-avatar" title="Admin User">AD</div>
+      </div>
+    </header>
+
+    <!-- ============================================================
+         PAGE: DASHBOARD
+         ============================================================ -->
+    <div class="page page-content" id="page-dashboard">
+
+      <!-- Alert Strip -->
+      <div class="alert-strip" id="alertStrip" style="display:none">
+        <span class="alert-icon">⚠️</span>
+        <span class="alert-text"></span>
+        <span class="alert-link" onclick="navigateTo('inventory')">View Inventory →</span>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions" id="quickActions">
+        <div class="quick-action-btn" data-page="pos">
+          <div class="qa-icon">🛒</div>
+          <div class="qa-label">New Sale</div>
+        </div>
+        <div class="quick-action-btn" data-page="inventory">
+          <div class="qa-icon">➕</div>
+          <div class="qa-label">Add Product</div>
+        </div>
+        <div class="quick-action-btn" data-page="reports">
+          <div class="qa-icon">📈</div>
+          <div class="qa-label">View Reports</div>
+        </div>
+        <div class="quick-action-btn" data-page="suppliers">
+          <div class="qa-icon">🏭</div>
+          <div class="qa-label">Suppliers</div>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">💰</span>
+          <div class="stat-label">Total Profit</div>
+          <div class="stat-value" id="dashTotalProfit">₱0.00</div>
+          <div class="stat-sub">All time (est. 30% margin)</div>
+          <div class="stat-trend">
+            <span class="trend-up">↑</span>
+            <span>12% vs last month</span>
+          </div>
+        </div>
+
+        <div class="stat-card amber">
+          <span class="stat-icon">📦</span>
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value" id="dashTotalOrders">0</div>
+          <div class="stat-sub">All time</div>
+          <div class="stat-trend">
+            <span class="trend-up">↑</span>
+            <span>8 new this week</span>
+          </div>
+        </div>
+
+        <div class="stat-card blue">
+          <span class="stat-icon">📈</span>
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value" id="dashRevenue">₱0.00</div>
+          <div class="stat-sub">All time</div>
+          <div class="stat-trend">
+            <span class="trend-up">↑</span>
+            <span>Revenue growing</span>
+          </div>
+        </div>
+
+        <div class="stat-card red">
+          <span class="stat-icon">⚠️</span>
+          <div class="stat-label">Low Stock Items</div>
+          <div class="stat-value" id="dashLowStock">0</div>
+          <div class="stat-sub">Need reordering</div>
+          <div class="stat-trend">
+            <span class="trend-down">↓</span>
+            <span>Check inventory</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Monthly Revenue</div>
+              <div class="text-sm text-muted mt-4" id="dashYear">2026 — Total Revenue</div>
+            </div>
+            <select class="filter-select" style="font-size:.8rem">
+              <option>All Time</option>
+              <option>This Year</option>
+            </select>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap">
+              <canvas id="revenueChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Top Selling</div>
+            <span class="text-xs text-muted">All Time</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap" style="height:160px">
+              <canvas id="topProductsChart"></canvas>
+            </div>
+            <div class="top-products-list mt-16" id="dashTopProducts"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="card recent-section">
+        <div class="card-header">
+          <div class="card-title">Latest Transactions — This Week</div>
+          <span class="view-all-link" onclick="navigateTo('reports')">View All →</span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-container">
+            <table class="transactions-table">
+              <thead>
+                <tr>
+                  <th>Transaction ID</th>
+                  <th>Customer</th>
+                  <th>Medicine Name</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="dashTransactions">
+                <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted)">No transactions yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-dashboard -->
+
+
+    <!-- ============================================================
+         PAGE: INVENTORY
+         ============================================================ -->
+    <div class="page page-content" id="page-inventory" style="display:none">
+
+      <!-- Header -->
+      <div class="inventory-header">
+        <div>
+          <h2 class="page-heading">Inventory Management</h2>
+          <p class="page-subheading">Manage your pharmacy product catalog</p>
+        </div>
+        <div class="d-flex gap-8">
+          <button class="btn btn-secondary" onclick="InventoryModule.init()">🔄 Refresh</button>
+          <button class="btn btn-primary" id="addProductBtn">+ Add Product</button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="inv-summary-cards">
+        <div class="inv-summary-card">
+          <div class="inv-card-icon ic-green">📦</div>
+          <div>
+            <div class="inv-card-val" id="inv-total-products">0</div>
+            <div class="inv-card-label">Total Products</div>
+          </div>
+        </div>
+        <div class="inv-summary-card">
+          <div class="inv-card-icon ic-amber">⚠️</div>
+          <div>
+            <div class="inv-card-val" id="inv-low-stock">0</div>
+            <div class="inv-card-label">Low Stock</div>
+          </div>
+        </div>
+        <div class="inv-summary-card">
+          <div class="inv-card-icon ic-red">❌</div>
+          <div>
+            <div class="inv-card-val" id="inv-out-stock">0</div>
+            <div class="inv-card-label">Out of Stock</div>
+          </div>
+        </div>
+        <div class="inv-summary-card">
+          <div class="inv-card-icon ic-blue">💰</div>
+          <div>
+            <div class="inv-card-val" id="inv-total-value">₱0.00</div>
+            <div class="inv-card-label">Inventory Value</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="filter-row">
+        <div class="search-wrap" style="max-width:340px">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="invSearch" placeholder="Search products, suppliers…">
+        </div>
+        <select class="filter-select" id="invCatFilter">
+          <option value="">All Categories</option>
+        </select>
+        <select class="filter-select" id="invStockFilter">
+          <option value="">All Stock</option>
+          <option value="in">In Stock</option>
+          <option value="low">Low Stock</option>
+          <option value="out">Out of Stock</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Supplier</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="invTableBody">
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <div class="pagination">
+          <span id="invPageInfo">Showing 0–0 of 0 products</span>
+          <div class="page-controls" id="invPageControls"></div>
+        </div>
+      </div>
+
+    </div><!-- /page-inventory -->
+
+
+    <!-- ============================================================
+         PAGE: POS
+         ============================================================ -->
+    <div class="page page-content" id="page-pos" style="display:none">
+
+      <div class="pos-layout">
+
+        <!-- LEFT: Products -->
+        <div class="pos-products-panel">
+          <!-- Search -->
+          <div class="pos-search-bar">
+            <span class="pos-search-icon">🔍</span>
+            <input type="text" class="pos-search-input" id="posSearch" placeholder="Search medicine…">
+          </div>
+
+          <!-- Category Tabs -->
+          <div class="pos-cat-tabs" id="posCatTabs"></div>
+
+          <!-- Product Grid -->
+          <div class="product-grid" id="posProductGrid"></div>
+        </div>
+
+        <!-- RIGHT: Cart -->
+        <div class="cart-panel">
+          <div class="cart-header">
+            <span class="cart-title">🛒 Cart</span>
+            <span class="cart-count" id="cartCount">0</span>
+          </div>
+
+          <!-- Customer -->
+          <div class="cart-customer">
+            <input type="text" class="customer-input" id="customerName" placeholder="Customer name (optional)">
+          </div>
+
+          <!-- Items -->
+          <div class="cart-items" id="cartItems">
+            <div class="cart-empty">
+              <div class="cart-empty-icon">🛒</div>
+              <div class="cart-empty-text">Cart is empty<br><small>Click a product to add</small></div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="cart-summary">
+            <div class="summary-row"><span class="label">Subtotal</span><span class="val" id="posSubtotal">₱0.00</span></div>
+            <div class="discount-row">
+              <input type="number" class="discount-input" id="discountInput" placeholder="Discount %" min="0" max="100">
+              <button class="discount-apply" id="applyDiscountBtn">Apply</button>
+            </div>
+            <div class="summary-row"><span class="label">Discount</span><span class="val" id="posDiscount">₱0.00</span></div>
+            <div class="summary-row"><span class="label">VAT (12%)</span><span class="val" id="posTax">₱0.00</span></div>
+            <div class="summary-row total"><span class="label">Total</span><span class="val" id="posTotal">₱0.00</span></div>
+          </div>
+
+          <!-- Payment -->
+          <div class="payment-section">
+            <div class="payment-methods">
+              <div class="pay-method active" data-method="cash"><span class="pay-icon">💵</span>Cash</div>
+              <div class="pay-method" data-method="card"><span class="pay-icon">💳</span>Card</div>
+              <div class="pay-method" data-method="ewallet"><span class="pay-icon">📱</span>E-Wallet</div>
+            </div>
+
+            <div id="cashSection">
+              <div class="cash-received-row">
+                <span class="cash-label">Cash Received:</span>
+                <input type="number" class="cash-input" id="cashReceived" placeholder="0.00" min="0">
+              </div>
+              <div class="change-row">
+                <span class="label">Change</span>
+                <span class="val" id="posChange">₱0.00</span>
+              </div>
+            </div>
+
+            <button class="checkout-btn" id="checkoutBtn" disabled>
+              <span>✅</span> Complete Transaction
+            </button>
+            <button class="clear-cart-btn" id="clearCartBtn">🗑️ Clear Cart</button>
+          </div>
+        </div><!-- /cart-panel -->
+
+      </div><!-- /pos-layout -->
+    </div><!-- /page-pos -->
+
+
+    <!-- ============================================================
+         PAGE: REPORTS
+         ============================================================ -->
+    <div class="page page-content" id="page-reports" style="display:none">
+
+      <!-- Header -->
+      <div class="reports-header">
+        <div>
+          <h2 class="page-heading">Reports & Analytics</h2>
+          <p class="page-subheading">Sales performance and business insights</p>
+        </div>
+        <div class="d-flex align-center gap-8" style="flex-wrap:wrap">
+          <div class="period-tabs">
+            <button class="period-tab" data-period="day">Today</button>
+            <button class="period-tab active" data-period="month">Month</button>
+            <button class="period-tab" data-period="week">Week</button>
+            <button class="period-tab" data-period="all">All Time</button>
+          </div>
+          <div class="export-btns">
+            <button class="export-btn" onclick="ReportsModule.exportCSV()">
+              <span class="eb-icon">📥</span> Export CSV
+            </button>
+            <button class="export-btn" onclick="ReportsModule.exportPDF()">
+              <span class="eb-icon">📄</span> Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Revenue</div>
+          <div class="kpi-value" id="kpiRevenue">₱0.00</div>
+          <div class="kpi-change up">↑ vs previous period</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Orders</div>
+          <div class="kpi-value" id="kpiOrders">0</div>
+          <div class="kpi-change up">↑ vs previous period</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Order Value</div>
+          <div class="kpi-value" id="kpiAvg">₱0.00</div>
+          <div class="kpi-change up">↑ per transaction</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Items Sold</div>
+          <div class="kpi-value" id="kpiItems">0</div>
+          <div class="kpi-change up">↑ units dispensed</div>
+        </div>
+      </div>
+
+      <!-- Insights -->
+      <div class="insight-cards">
+        <div class="insight-card">
+          <div class="insight-icon i-green">🏆</div>
+          <div>
+            <div class="insight-label">Best Seller</div>
+            <div class="insight-value" id="insightBestProduct">—</div>
+            <div class="insight-detail">Top revenue product</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon i-amber">💳</div>
+          <div>
+            <div class="insight-label">Top Payment</div>
+            <div class="insight-value" id="insightPayMethod">—</div>
+            <div class="insight-detail">Most used method</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon i-blue">📦</div>
+          <div>
+            <div class="insight-label">Catalog Size</div>
+            <div class="insight-value" id="insightTotalSKU">—</div>
+            <div class="insight-detail">Active products</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Revenue Chart -->
+      <div class="card main-chart-card">
+        <div class="card-header">
+          <div class="card-title">Revenue Trend — Monthly</div>
+        </div>
+        <div class="card-body">
+          <div class="main-chart-wrap">
+            <canvas id="mainRevenueChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub Charts Row -->
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Sales by Category</div></div>
+          <div class="card-body">
+            <div class="sub-chart-wrap"><canvas id="categoryPieChart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Sales by Payment Method</div></div>
+          <div class="card-body">
+            <div class="sub-chart-wrap"><canvas id="paymentBarChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Products Table -->
+      <div class="card mb-20">
+        <div class="card-header"><div class="card-title">Top Selling Products</div></div>
+        <div class="card-body" style="padding:0">
+          <div class="table-container">
+            <table class="top-products-table">
+              <thead>
+                <tr><th>Rank</th><th>Product</th><th>Units Sold</th><th>Revenue</th></tr>
+              </thead>
+              <tbody id="topProductsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sales Log -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Sales Log</div></div>
+        <div class="card-body" style="padding:0">
+          <div class="table-container">
+            <table class="sales-log-table">
+              <thead>
+                <tr><th>Order ID</th><th>Date & Time</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr>
+              </thead>
+              <tbody id="salesLogBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-reports -->
+
+
+    <!-- ============================================================
+         PAGE: SUPPLIERS
+         ============================================================ -->
+    <div class="page page-content" id="page-suppliers" style="display:none">
+      <div class="inventory-header">
+        <div>
+          <h2 class="page-heading">Suppliers</h2>
+          <p class="page-subheading">Manage your medicine suppliers</p>
+        </div>
+        <button class="btn btn-primary" onclick="showToast('Supplier management coming soon','info')">+ Add Supplier</button>
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr><th>Supplier Name</th><th>Contact</th><th>Products</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>MedSupply Co.</strong></td><td>+63 912 345 6789</td><td>Amoxicillin, Losartan</td><td><span class="badge badge-success">Active</span></td><td><div class="action-btns"><button class="tbl-action edit">✏️</button></div></td></tr>
+              <tr><td><strong>Unilab Philippines</strong></td><td>+63 2 8888 9999</td><td>Biogesic, Ibuprofen</td><td><span class="badge badge-success">Active</span></td><td><div class="action-btns"><button class="tbl-action edit">✏️</button></div></td></tr>
+              <tr><td><strong>Pharex Health</strong></td><td>+63 917 123 4567</td><td>Cetirizine, Amlodipine</td><td><span class="badge badge-success">Active</span></td><td><div class="action-btns"><button class="tbl-action edit">✏️</button></div></td></tr>
+              <tr><td><strong>Pfizer Philippines</strong></td><td>+63 2 7777 8888</td><td>Centrum, Omeprazole</td><td><span class="badge badge-success">Active</span></td><td><div class="action-btns"><button class="tbl-action edit">✏️</button></div></td></tr>
+              <tr><td><strong>GSK Philippines</strong></td><td>+63 2 6666 7777</td><td>Salbutamol Inhaler</td><td><span class="badge badge-warning">Pending</span></td><td><div class="action-btns"><button class="tbl-action edit">✏️</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE: HISTORY
+         ============================================================ -->
+    <div class="page page-content" id="page-history" style="display:none">
+      <div class="inventory-header">
+        <h2 class="page-heading">History Log</h2>
+      </div>
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr><th>Timestamp</th><th>Action</th><th>User</th><th>Details</th></tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">No history yet. Start making transactions!</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE: SETTINGS
+         ============================================================ -->
+    <div class="page page-content" id="page-settings" style="display:none">
+      <div class="inventory-header">
+        <h2 class="page-heading">Settings</h2>
+      </div>
+
+      <div style="max-width:600px;display:flex;flex-direction:column;gap:16px">
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Inventory Settings</div></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Low Stock Threshold</label>
+              <input type="number" class="form-control" id="lowStockThreshold" value="10" min="1" max="100">
+              <div class="text-xs text-muted mt-4">Products with stock at or below this number will be flagged as low stock</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Store Information</div></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Store Name</label>
+              <input type="text" class="form-control" value="PharmaStock Pharmacy">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">VAT Rate (%)</label>
+                <input type="number" class="form-control" value="12">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Currency</label>
+                <select class="form-control">
+                  <option value="PHP" selected>PHP (₱)</option>
+                  <option value="USD">USD ($)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="showToast('Settings saved!','success')">Save Settings</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Danger Zone</div></div>
+          <div class="card-body">
+            <p class="text-sm text-muted mb-16">Clearing data will permanently remove all orders and inventory from this device.</p>
+            <button class="btn btn-danger" onclick="if(confirm('Clear ALL data?')){localStorage.clear();showToast('Data cleared','warning');setTimeout(()=>location.reload(),1000)}">
+              🗑️ Clear All Data
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Add / Edit Product Modal -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="productModalTitle">Add Product</div>
+      <button class="modal-close" onclick="closeModal('productModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="productForm">
+        <div id="productIdGroup" style="display:none">
+          <div class="form-group">
+            <label class="form-label">Product ID</label>
+            <input type="text" class="form-control" id="pId" readonly style="opacity:.6">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Product Name *</label>
+            <input type="text" class="form-control" id="pName" placeholder="e.g. Amoxicillin 500mg" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <input type="text" class="form-control" id="pCategory" placeholder="e.g. Antibiotics" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Emoji Icon</label>
+            <input type="text" class="form-control" id="pEmoji" placeholder="💊" maxlength="2" value="💊">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Price (₱) *</label>
+            <input type="number" class="form-control" id="pPrice" placeholder="0.00" min="0" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Current Stock *</label>
+            <input type="number" class="form-control" id="pStock" placeholder="0" min="0" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Reorder Level</label>
+            <input type="number" class="form-control" id="pReorder" placeholder="10" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expiry Date</label>
+            <input type="date" class="form-control" id="pExpiry">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Supplier</label>
+          <input type="text" class="form-control" id="pSupplier" placeholder="Supplier name">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveProductBtn">💾 Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-body" style="padding:28px;text-align:center">
+      <div class="delete-confirm-icon">🗑️</div>
+      <h3 style="margin-bottom:8px">Delete Product?</h3>
+      <p class="text-sm text-muted">Are you sure you want to delete <strong id="deleteProductName"></strong>? This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">🗑️ Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Product Modal -->
+<div class="modal-overlay" id="viewProductModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Product Details</div>
+      <button class="modal-close" onclick="closeModal('viewProductModal')">✕</button>
+    </div>
+    <div class="modal-body" id="viewProductBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('viewProductModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal receipt-modal">
+    <div class="modal-header">
+      <div class="modal-title">🧾 Receipt</div>
+      <button class="modal-close" onclick="closeModal('receiptModal')">✕</button>
+    </div>
+    <div class="modal-body" id="receiptBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('receiptModal')">Close</button>
+      <button class="btn btn-primary" id="printReceiptBtn">🖨️ Print Receipt</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     JS
+     ============================================================ -->
+<script src="../js/inventory.js"></script>
+<script src="../js/pos.js"></script>
+<script src="../js/analytics.js"></script>
+<script src="../js/main.js"></script>
+
+<script>
+// Show hamburger on mobile
+if (window.innerWidth <= 768) {
+  document.getElementById('hamburgerBtn').style.display = 'flex';
+}
+window.addEventListener('resize', () => {
+  document.getElementById('hamburgerBtn').style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+});
+</script>
+
+</body>
+</html>
